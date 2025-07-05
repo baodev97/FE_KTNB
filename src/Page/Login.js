@@ -10,6 +10,8 @@ import {
   Divider,
 } from '@mui/material';
 import logo from '../Util/logoVcbNeo.jpg';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 
 
@@ -21,9 +23,18 @@ export default function Login() {
     reset
   } = useForm();
 
+  const { signin } = useAuth();
+  
+  const navigate = useNavigate();
+
   const onSubmit = (data) => {
-    console.log('Login data:', data);
+    signin(
+      data,
+      () => navigate("/report"),
+      (err) => alert("Đăng nhập thất bại!")
+    );
     // Thực hiện xử lý đăng nhập ở đây (gọi API, xác thực, ...)
+    console.log('Đăng nhập với dữ liệu:', data);
   };
 
   return (
@@ -34,7 +45,7 @@ export default function Login() {
                 <img src={logo} alt="Logo" width="240" height="auto"/>
             </div>
             <Divider orientation="vertical" flexItem  sx={{ bgcolor: '#006600', mx:2, width: '4px' }}/>
-            <div display="flex" flexDirection="column" alignItems="flex-start">
+            <Box display="flex" flexDirection="column" alignItems="flex-start">
                 <Typography variant="subtitle1" color="#006600" sx={{ fontSize: '9px' }}>
                    NGÂN HÀNG THƯƠNG MẠI TNHH MTV NGOẠI THƯƠNG CÔNG NGHỆ SỐ
                 </Typography>
@@ -45,7 +56,7 @@ export default function Login() {
                     HỆ THỐNG BÁO CÁO 
                 </Typography>
 
-            </div>
+            </Box>
         </Box>
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <Box display="flex" flexDirection="column" gap={2}>
