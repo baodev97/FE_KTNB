@@ -43,7 +43,7 @@ const SimpleAppBar = () => {
           </Typography>
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography variant="h6" component="div">
+          <Typography variant="h4" component="div">
             KTNB - HỆ THỐNG BÁO CÁO 
           </Typography>
         </Box>

@@ -37,41 +37,41 @@ export default function Report() {
   const [loadingTrending, setLoadingTrending] = useState();
   const [reportData, setReportData] = useState(null);
 
-  const fetchData = async () => {
+  const fetchData = async (data) => {
     try {
       setLoadingTrending(true);
       const res = await apiService.post("/api/DataReport", {
-        loai_baoCao: "BC01.1",
-        fromDate: fromDate.format("YYYY-MM-DD"),
-        toDate: toDate.format("YYYY-MM-DD"),
-        ma_CN: "CNSG",
-        ma_PGD: "PGDSG",
-        is_BaoGomDuNoDaXLRR: false,
+        loai_baoCao: data.LoaiBaoCao,
+        fromDate: data.FromDate,
+        toDate: data.ToDate,
+        ma_CN: data.MaCN,
+        ma_PGD: data.MaPGD,
+        is_BaoGomDuNoDaXLRR: data.GomDuNoDaXLRR,
       });
       const result = res.data;
-      console.log("Data fetched successfully:", result);
-      console.log("check success", result.success);
+      // console.log("Data fetched successfully:", result);
+      // console.log("check success", result.success);
       if (result.success) {
         setReportData(result);
-        console.log("Report data:", result);
+        // console.log("Report data:", result);
       }
     } catch (error) {
       console.log(error.message);
     }
   };
 
-  const exportData = async () => {
+  const exportData = async (data) => {
     try {
       const response = await apiService.post(
         "/api/ExportData", // thay bằng endpoint export của bạn
         {
           // payload nếu cần
-          loai_baoCao: "BC01.1",
-          fromDate: fromDate.format("YYYY-MM-DD"),
-          toDate: toDate.format("YYYY-MM-DD"),
-          ma_CN: "CNSG",
-          ma_PGD: "PGDSG",
-          is_BaoGomDuNoDaXLRR: false,
+          loai_baoCao: data.LoaiBaoCao,
+          fromDate: data.FromDate,
+          toDate: data.ToDate,
+          ma_CN: data.MaCN,
+          ma_PGD: data.MaPGD,
+          is_BaoGomDuNoDaXLRR: data.GomDuNoDaXLRR,
         },
         {
           responseType: "blob", // ⚠️ Quan trọng
@@ -98,11 +98,18 @@ export default function Report() {
 
   const onSubmit = (data, event) => {
     const action = event?.nativeEvent?.submitter?.value;
+    // Custom Data before sending to API
+    data.FromDate = fromDate ? dayjs(fromDate).format("YYYY-MM-DD") : null;
+    data.ToDate = toDate ? dayjs(toDate).format("YYYY-MM-DD") : null;
+    data.MaCN = data.MaCN || null; // Default value if not selected
+    data.MaPGD = data.MaPGD || null; // Default value
+    data.GomDuNoDaXLRR = data.GomDuNoDaXLRR === "False" ? false : true; // Convert to boolean
+
     if (action === "search") {
       console.log("Searching with data:", data);
-      fetchData();
+      fetchData(data);
     } else if (action === "export") {
-      exportData();
+      exportData(data);
     }
     // Thực hiện xử lý đăng nhập ở đây (gọi API, xác thực, ...)
   };
@@ -112,7 +119,17 @@ export default function Report() {
       <SimpleAppBar />
       <Box sx={{ mt: 12, mb: 2 }}></Box>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <Box sx={{ maxWidth: 700, mx: "auto", mt: 4 }}>
+        <Box
+          sx={{
+            maxWidth: 700,
+            mx: "auto",
+            mt: 4,
+            border: 1, // độ dày border (1 = theme.spacing(1px))
+            borderColor: "grey.400", // màu sắc (sử dụng màu trong theme)
+            borderRadius: 2, // bo góc (tuỳ chọn)
+            p: 2, // padding (tuỳ chọn)
+          }}
+        >
           <Grid
             container
             spacing={2}
@@ -128,14 +145,10 @@ export default function Report() {
                 defaultValue="BC01.1"
                 {...register("LoaiBaoCao")}
               >
-                <MenuItem value="BC01.1">
-                  Báo Cáo Số Dư Hệ Thống Bán Lẻ
-                </MenuItem>
-                <MenuItem value="BC01.2">
-                  Báo Cáo Số Dư Hệ Thống Bán Buôn
-                </MenuItem>
-                <MenuItem value="BC02">Báo Cáo Tăng Trưởng Hệ Thống</MenuItem>
-                <MenuItem value="BC03">Báo Cáo Số Dư CN/PGD</MenuItem>
+                <MenuItem value="BC01.1">Số Dư Hệ Thống Bán Lẻ</MenuItem>
+                <MenuItem value="BC01.2">Số Dư Hệ Thống Bán Buôn</MenuItem>
+                <MenuItem value="BC02">Tăng Trưởng Hệ Thống</MenuItem>
+                <MenuItem value="BC03">Số Dư CN/PGD</MenuItem>
                 <MenuItem value="BC04">KH Phát Sinh Mới Trong 1 Năm</MenuItem>
                 <MenuItem value="BC05">KH Phát Sinh Mới Trong Quý</MenuItem>
                 <MenuItem value="BC06">
@@ -309,6 +322,7 @@ export default function Report() {
           </Grid>
         </Box>
       </form>
+      <Box sx={{ m: 4 }}></Box>
       {reportData ? (
         <Box>
           <ReportTable data={reportData.data} />
