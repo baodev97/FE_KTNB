@@ -39,7 +39,7 @@ export default function Login() {
 
   return (
     <Container maxWidth="sm">
-      <Paper elevation={3} sx={{ padding: 4, marginTop: 8 }}>
+      <Paper elevation={3} sx={{ padding: 4, marginTop: 24 }}>
         <Box display={'flex'} flexDirection="row" alignItems="center" mb={4}>
             <div>
                 <img src={logo} alt="Logo" width="240" height="auto"/>

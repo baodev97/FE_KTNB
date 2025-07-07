@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { TextField, Button, Grid, Box, MenuItem, Stack } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Grid,
+  Box,
+  MenuItem,
+  Stack,
+  AppBar,
+} from "@mui/material";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import ReportTable from "../Component/ReportTable";
 import apiService from "../api/apiService";
+import SimpleAppBar from "../Component/SimpleAppBar";
+import { useWatch } from "react-hook-form";
 
 export default function Report() {
   const {
@@ -20,8 +30,10 @@ export default function Report() {
       ToDate: null,
     },
   });
-  const [fromDate, setFromDate] = React.useState(dayjs());
-  const [toDate, setToDate] = React.useState(dayjs());
+  // const [fromDate, setFromDate] = React.useState(dayjs());
+  // const [toDate, setToDate] = React.useState(dayjs());
+  const fromDate = useWatch({ control, name: "FromDate" });
+  const toDate = useWatch({ control, name: "ToDate" });
   const [loadingTrending, setLoadingTrending] = useState();
   const [reportData, setReportData] = useState(null);
 
@@ -38,7 +50,7 @@ export default function Report() {
       });
       const result = res.data;
       console.log("Data fetched successfully:", result);
-      console.log("check success",result.success)
+      console.log("check success", result.success);
       if (result.success) {
         setReportData(result);
         console.log("Report data:", result);
@@ -50,44 +62,44 @@ export default function Report() {
 
   const exportData = async () => {
     try {
-    const response = await apiService.post(
-      "/api/ExportData", // thay bằng endpoint export của bạn
-      {
-        // payload nếu cần
-        loai_baoCao: "BC01.1",
-        fromDate: fromDate.format("YYYY-MM-DD"),
-        toDate: toDate.format("YYYY-MM-DD"),
-        ma_CN: "CNSG",
-        ma_PGD: "PGDSG",
-        is_BaoGomDuNoDaXLRR: false,
-      },
-      {
-        responseType: 'blob', // ⚠️ Quan trọng
-      }
-    );
+      const response = await apiService.post(
+        "/api/ExportData", // thay bằng endpoint export của bạn
+        {
+          // payload nếu cần
+          loai_baoCao: "BC01.1",
+          fromDate: fromDate.format("YYYY-MM-DD"),
+          toDate: toDate.format("YYYY-MM-DD"),
+          ma_CN: "CNSG",
+          ma_PGD: "PGDSG",
+          is_BaoGomDuNoDaXLRR: false,
+        },
+        {
+          responseType: "blob", // ⚠️ Quan trọng
+        }
+      );
 
-    // Tạo URL và tải file
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
+      // Tạo URL và tải file
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
 
-    // Đặt tên file (hoặc lấy từ response.headers nếu có)
-    link.setAttribute('download', 'baocao.xlsx');
-    document.body.appendChild(link);
-    link.click();
+      // Đặt tên file (hoặc lấy từ response.headers nếu có)
+      link.setAttribute("download", "baocao.xlsx");
+      document.body.appendChild(link);
+      link.click();
 
-    // Xoá sau khi xong
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error("Lỗi khi export Excel:", error);
-  }
+      // Xoá sau khi xong
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Lỗi khi export Excel:", error);
+    }
   };
-
 
   const onSubmit = (data, event) => {
     const action = event?.nativeEvent?.submitter?.value;
     if (action === "search") {
+      console.log("Searching with data:", data);
       fetchData();
     } else if (action === "export") {
       exportData();
@@ -97,6 +109,8 @@ export default function Report() {
 
   return (
     <>
+      <SimpleAppBar />
+      <Box sx={{ mt: 12, mb: 2 }}></Box>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <Box sx={{ maxWidth: 700, mx: "auto", mt: 4 }}>
           <Grid
@@ -122,6 +136,25 @@ export default function Report() {
                 </MenuItem>
                 <MenuItem value="BC02">Báo Cáo Tăng Trưởng Hệ Thống</MenuItem>
                 <MenuItem value="BC03">Báo Cáo Số Dư CN/PGD</MenuItem>
+                <MenuItem value="BC04">KH Phát Sinh Mới Trong 1 Năm</MenuItem>
+                <MenuItem value="BC05">KH Phát Sinh Mới Trong Quý</MenuItem>
+                <MenuItem value="BC06">
+                  KH Chuyển Nhóm Nợ Từ Nhóm 1 Sang 2 Trong Vòng 1 Năm
+                </MenuItem>
+                <MenuItem value="BC07">
+                  KH Chuyển Nhóm Nợ Từ Nhóm 1 Sang 2 Trong Quý
+                </MenuItem>
+                <MenuItem value="BC08">
+                  KH Chuyển Nợ Xấu Trong Vòng 1 Năm
+                </MenuItem>
+                <MenuItem value="BC09">KH Chuyển Nợ Xấu Trong Quý</MenuItem>
+                <MenuItem value="BC10">
+                  Top 20 KH Dư Nợ Lớn Nhất Của CN/PGD
+                </MenuItem>
+                <MenuItem value="BC11">Dự Nợ Theo Nghành</MenuItem>
+                <MenuItem value="BC12">
+                  Top 20 KH Dư Nợ Lớn Nhất Theo Nghành
+                </MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12}>
@@ -178,41 +211,68 @@ export default function Report() {
           <Grid
             container
             spacing={2}
-            display={"flex"}
-            justifyContent={"space-between"}
+            display="flex"
+            justifyContent="space-between"
           >
+            {/* TỪ NGÀY */}
             <Grid item xs={12}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <Controller
                   name="FromDate"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <DatePicker
                       label="Từ Ngày"
                       value={field.value}
                       onChange={(newValue) => field.onChange(newValue)}
-                      renderInput={(params) => (
-                        <TextField {...params} fullWidth />
-                      )}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!fieldState.error,
+                          helperText: fieldState.error?.message,
+                        },
+                      }}
                       sx={{ width: 330 }}
                     />
                   )}
                 />
               </LocalizationProvider>
             </Grid>
+
+            {/* ĐẾN NGÀY */}
             <Grid item xs={12}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <Controller
                   name="ToDate"
                   control={control}
-                  render={({ field }) => (
+                  rules={{
+                    validate: (toDate) => {
+                      if (!fromDate) {
+                        return 'Vui lòng chọn "Từ Ngày" trước';
+                      }
+                      if (
+                        toDate &&
+                        dayjs(toDate).isBefore(dayjs(fromDate), "day")
+                      ) {
+                        return '"Đến Ngày" không được trước "Từ Ngày"';
+                      }
+                      return true;
+                    },
+                  }}
+                  render={({ field, fieldState }) => (
                     <DatePicker
                       label="Đến Ngày"
                       value={field.value}
                       onChange={(newValue) => field.onChange(newValue)}
-                      renderInput={(params) => (
-                        <TextField {...params} fullWidth />
-                      )}
+                      disabled={!fromDate}
+                      minDate={fromDate ? dayjs(fromDate) : undefined}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!fieldState.error,
+                          helperText: fieldState.error?.message,
+                        },
+                      }}
                       sx={{ width: 330 }}
                     />
                   )}
