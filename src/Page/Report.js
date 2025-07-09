@@ -1,14 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import {
-  TextField,
-  Button,
-  Grid,
-  Box,
-  MenuItem,
-  Stack,
-  AppBar,
-} from "@mui/material";
+import { TextField, Button, Grid, Box, MenuItem } from "@mui/material";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -34,12 +26,12 @@ export default function Report() {
   // const [toDate, setToDate] = React.useState(dayjs());
   const fromDate = useWatch({ control, name: "FromDate" });
   const toDate = useWatch({ control, name: "ToDate" });
-  const [loadingTrending, setLoadingTrending] = useState();
+  //const [loadingTrending, setLoadingTrending] = useState();
   const [reportData, setReportData] = useState(null);
 
   const fetchData = async (data) => {
     try {
-      setLoadingTrending(true);
+      //setLoadingTrending(true);
       const res = await apiService.post("/api/DataReport", {
         loai_baoCao: data.LoaiBaoCao,
         fromDate: data.FromDate,
@@ -260,13 +252,11 @@ export default function Report() {
                   control={control}
                   rules={{
                     validate: (toDate) => {
-                      if (!fromDate) {
-                        return 'Vui lòng chọn "Từ Ngày" trước';
+                      if (!toDate || !fromDate) {
+                        // Nếu một trong hai không có => hợp lệ (không bắt buộc nhập)
+                        return true;
                       }
-                      if (
-                        toDate &&
-                        dayjs(toDate).isBefore(dayjs(fromDate), "day")
-                      ) {
+                      if (dayjs(toDate).isBefore(dayjs(fromDate), "day")) {
                         return '"Đến Ngày" không được trước "Từ Ngày"';
                       }
                       return true;
