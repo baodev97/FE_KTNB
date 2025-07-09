@@ -1,11 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { TextField, Button, Grid, Box, MenuItem, Stack } from "@mui/material";
+import { TextField, Button, Grid, Box, MenuItem } from "@mui/material";
 import { LocalizationProvider, DatePicker } from "@mui/x-date-pickers";
 import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import ReportTable from "../Component/ReportTable";
 import apiService from "../api/apiService";
+import SimpleAppBar from "../Component/SimpleAppBar";
+import { useWatch } from "react-hook-form";
 
 export default function Report() {
   const {
@@ -20,85 +22,106 @@ export default function Report() {
       ToDate: null,
     },
   });
-  const [fromDate, setFromDate] = React.useState(dayjs());
-  const [toDate, setToDate] = React.useState(dayjs());
-  const [loadingTrending, setLoadingTrending] = useState();
+  // const [fromDate, setFromDate] = React.useState(dayjs());
+  // const [toDate, setToDate] = React.useState(dayjs());
+  const fromDate = useWatch({ control, name: "FromDate" });
+  const toDate = useWatch({ control, name: "ToDate" });
+  //const [loadingTrending, setLoadingTrending] = useState();
   const [reportData, setReportData] = useState(null);
 
-  const fetchData = async () => {
+  const fetchData = async (data) => {
     try {
-      setLoadingTrending(true);
+      //setLoadingTrending(true);
       const res = await apiService.post("/api/DataReport", {
-        loai_baoCao: "BC01.1",
-        fromDate: fromDate.format("YYYY-MM-DD"),
-        toDate: toDate.format("YYYY-MM-DD"),
-        ma_CN: "CNSG",
-        ma_PGD: "PGDSG",
-        is_BaoGomDuNoDaXLRR: false,
+        loai_baoCao: data.LoaiBaoCao,
+        fromDate: data.FromDate,
+        toDate: data.ToDate,
+        ma_CN: data.MaCN,
+        ma_PGD: data.MaPGD,
+        is_BaoGomDuNoDaXLRR: data.GomDuNoDaXLRR,
       });
       const result = res.data;
-      console.log("Data fetched successfully:", result);
-      console.log("check success",result.success)
+      // console.log("Data fetched successfully:", result);
+      // console.log("check success", result.success);
       if (result.success) {
         setReportData(result);
-        console.log("Report data:", result);
+        // console.log("Report data:", result);
       }
     } catch (error) {
       console.log(error.message);
     }
   };
 
-  const exportData = async () => {
+  const exportData = async (data) => {
     try {
-    const response = await apiService.post(
-      "/api/ExportData", // thay bằng endpoint export của bạn
-      {
-        // payload nếu cần
-        loai_baoCao: "BC01.1",
-        fromDate: fromDate.format("YYYY-MM-DD"),
-        toDate: toDate.format("YYYY-MM-DD"),
-        ma_CN: "CNSG",
-        ma_PGD: "PGDSG",
-        is_BaoGomDuNoDaXLRR: false,
-      },
-      {
-        responseType: 'blob', // ⚠️ Quan trọng
-      }
-    );
+      const response = await apiService.post(
+        "/api/ExportData", // thay bằng endpoint export của bạn
+        {
+          // payload nếu cần
+          loai_baoCao: data.LoaiBaoCao,
+          fromDate: data.FromDate,
+          toDate: data.ToDate,
+          ma_CN: data.MaCN,
+          ma_PGD: data.MaPGD,
+          is_BaoGomDuNoDaXLRR: data.GomDuNoDaXLRR,
+        },
+        {
+          responseType: "blob", // ⚠️ Quan trọng
+        }
+      );
 
-    // Tạo URL và tải file
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
+      // Tạo URL và tải file
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
 
-    // Đặt tên file (hoặc lấy từ response.headers nếu có)
-    link.setAttribute('download', 'baocao.xlsx');
-    document.body.appendChild(link);
-    link.click();
+      // Đặt tên file (hoặc lấy từ response.headers nếu có)
+      link.setAttribute("download", "baocao.xlsx");
+      document.body.appendChild(link);
+      link.click();
 
-    // Xoá sau khi xong
-    link.remove();
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error("Lỗi khi export Excel:", error);
-  }
+      // Xoá sau khi xong
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Lỗi khi export Excel:", error);
+    }
   };
-
 
   const onSubmit = (data, event) => {
     const action = event?.nativeEvent?.submitter?.value;
+    // Custom Data before sending to API
+    data.FromDate = fromDate ? dayjs(fromDate).format("YYYY-MM-DD") : null;
+    data.ToDate = toDate ? dayjs(toDate).format("YYYY-MM-DD") : null;
+    data.MaCN = data.MaCN || null; // Default value if not selected
+    data.MaPGD = data.MaPGD || null; // Default value
+    data.GomDuNoDaXLRR = data.GomDuNoDaXLRR === "False" ? false : true; // Convert to boolean
+
     if (action === "search") {
-      fetchData();
+      console.log("Searching with data:", data);
+      fetchData(data);
     } else if (action === "export") {
-      exportData();
+      exportData(data);
     }
     // Thực hiện xử lý đăng nhập ở đây (gọi API, xác thực, ...)
   };
 
   return (
     <>
+      <SimpleAppBar />
+      <Box sx={{ mt: 12, mb: 2 }}></Box>
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <Box sx={{ maxWidth: 700, mx: "auto", mt: 4 }}>
+        <Box
+          sx={{
+            maxWidth: 700,
+            mx: "auto",
+            mt: 4,
+            border: 1, // độ dày border (1 = theme.spacing(1px))
+            borderColor: "grey.400", // màu sắc (sử dụng màu trong theme)
+            borderRadius: 2, // bo góc (tuỳ chọn)
+            p: 2, // padding (tuỳ chọn)
+          }}
+        >
           <Grid
             container
             spacing={2}
@@ -114,14 +137,29 @@ export default function Report() {
                 defaultValue="BC01.1"
                 {...register("LoaiBaoCao")}
               >
-                <MenuItem value="BC01.1">
-                  Báo Cáo Số Dư Hệ Thống Bán Lẻ
+                <MenuItem value="BC01.1">Số Dư Hệ Thống Bán Lẻ</MenuItem>
+                <MenuItem value="BC01.2">Số Dư Hệ Thống Bán Buôn</MenuItem>
+                <MenuItem value="BC02">Tăng Trưởng Hệ Thống</MenuItem>
+                <MenuItem value="BC03">Số Dư CN/PGD</MenuItem>
+                <MenuItem value="BC04">KH Phát Sinh Mới Trong 1 Năm</MenuItem>
+                <MenuItem value="BC05">KH Phát Sinh Mới Trong Quý</MenuItem>
+                <MenuItem value="BC06">
+                  KH Chuyển Nhóm Nợ Từ Nhóm 1 Sang 2 Trong Vòng 1 Năm
                 </MenuItem>
-                <MenuItem value="BC01.2">
-                  Báo Cáo Số Dư Hệ Thống Bán Buôn
+                <MenuItem value="BC07">
+                  KH Chuyển Nhóm Nợ Từ Nhóm 1 Sang 2 Trong Quý
                 </MenuItem>
-                <MenuItem value="BC02">Báo Cáo Tăng Trưởng Hệ Thống</MenuItem>
-                <MenuItem value="BC03">Báo Cáo Số Dư CN/PGD</MenuItem>
+                <MenuItem value="BC08">
+                  KH Chuyển Nợ Xấu Trong Vòng 1 Năm
+                </MenuItem>
+                <MenuItem value="BC09">KH Chuyển Nợ Xấu Trong Quý</MenuItem>
+                <MenuItem value="BC10">
+                  Top 20 KH Dư Nợ Lớn Nhất Của CN/PGD
+                </MenuItem>
+                <MenuItem value="BC11">Dự Nợ Theo Nghành</MenuItem>
+                <MenuItem value="BC12">
+                  Top 20 KH Dư Nợ Lớn Nhất Theo Nghành
+                </MenuItem>
               </TextField>
             </Grid>
             <Grid item xs={12}>
@@ -178,41 +216,66 @@ export default function Report() {
           <Grid
             container
             spacing={2}
-            display={"flex"}
-            justifyContent={"space-between"}
+            display="flex"
+            justifyContent="space-between"
           >
+            {/* TỪ NGÀY */}
             <Grid item xs={12}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <Controller
                   name="FromDate"
                   control={control}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <DatePicker
                       label="Từ Ngày"
                       value={field.value}
                       onChange={(newValue) => field.onChange(newValue)}
-                      renderInput={(params) => (
-                        <TextField {...params} fullWidth />
-                      )}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!fieldState.error,
+                          helperText: fieldState.error?.message,
+                        },
+                      }}
                       sx={{ width: 330 }}
                     />
                   )}
                 />
               </LocalizationProvider>
             </Grid>
+
+            {/* ĐẾN NGÀY */}
             <Grid item xs={12}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
                 <Controller
                   name="ToDate"
                   control={control}
-                  render={({ field }) => (
+                  rules={{
+                    validate: (toDate) => {
+                      if (!toDate || !fromDate) {
+                        // Nếu một trong hai không có => hợp lệ (không bắt buộc nhập)
+                        return true;
+                      }
+                      if (dayjs(toDate).isBefore(dayjs(fromDate), "day")) {
+                        return '"Đến Ngày" không được trước "Từ Ngày"';
+                      }
+                      return true;
+                    },
+                  }}
+                  render={({ field, fieldState }) => (
                     <DatePicker
                       label="Đến Ngày"
                       value={field.value}
                       onChange={(newValue) => field.onChange(newValue)}
-                      renderInput={(params) => (
-                        <TextField {...params} fullWidth />
-                      )}
+                      disabled={!fromDate}
+                      minDate={fromDate ? dayjs(fromDate) : undefined}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          error: !!fieldState.error,
+                          helperText: fieldState.error?.message,
+                        },
+                      }}
                       sx={{ width: 330 }}
                     />
                   )}
@@ -249,6 +312,7 @@ export default function Report() {
           </Grid>
         </Box>
       </form>
+      <Box sx={{ m: 4 }}></Box>
       {reportData ? (
         <Box>
           <ReportTable data={reportData.data} />
